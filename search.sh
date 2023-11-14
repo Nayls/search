@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
-version="0.1.1"
+set -e
+
+version="0.2.0"
 
 context="${CONTEXT:-$(kubectl config view --minify -o jsonpath='{.contexts...name}')}"
 namespace="${NAMESPACE:-$(kubectl config view --minify -o jsonpath='{.contexts..namespace}')}"
 
 approve="${APPROVE:-false}"
+json="false"
 
 search="${1}"
 
@@ -94,10 +97,13 @@ function update {
 
 function help {
     echo "Commands:"
-    echo "  ./search.sh [SEARCH ENV] # Выполнить поиск по названию переменной в деплойментах"
-    echo "  ./search.sh help         # Отображение справки"
-    echo "  ./search.sh update       # Обновление скрипта"
-    echo "  ./search.sh version      # Отображение версии"
+    echo "  ./search.sh [SEARCH ENV] [OPTIONS] # Выполнить поиск по названию переменной в деплойментах"
+    echo "  ./search.sh help                   # Отображение справки"
+    echo "  ./search.sh update                 # Обновление скрипта"
+    echo "  ./search.sh version                # Отображение версии"
+    echo ""
+    echo "Options:"
+    echo "  [--json]  # Отобразить найденные данные в json"
     echo ""
     echo "System environments:"
     echo "  CONTEXT    # Какой kube-context использовать (по умолчанию current-context)"
@@ -109,6 +115,7 @@ function help {
     echo -e "  ./search.sh update\n"
     echo -e "  ./search.sh version\n"
     echo -e "  ./search.sh \"KEYCLOAK_\"\n"
+    echo -e "  ./search.sh \"KEYCLOAK_\" --json\n"
     echo -e "  CONTEXT=context-name ./search.sh \"KEYCLOAK_\"\n"
     echo -e "  CONTEXT=context-name NAMESPACE=namespace-name ./search.sh \"KEYCLOAK_\"\n"
     echo -e "  APPROVE=true ./search.sh \"KEYCLOAK_\"\n"
@@ -118,6 +125,23 @@ function version {
     echo "$version"
 }
 
+# Шаблон поиска по env
+#
+IFS='' read -r -d '' template_search_env_json <<"EOF" || true
+jq -r --arg SEARCH "$search" \
+'.items[] | select(.spec.template.spec.containers[].env[]? | select(.name | contains($SEARCH)) and .spec.replicas != 0) | {name: .metadata.name, replicas: .spec.replicas, variable: .spec.template.spec.containers[].env[]? | select(.name | contains($SEARCH))}'
+EOF
+
+# Форматирование вывода поиска по env в консоль
+#
+IFS='' read -r -d '' template_format_search_env <<"EOF" || true
+jq -r '.name + ": \"" + .variable.name + ": " + (.variable | if has("valueFrom") then .valueFrom | tostring else .value end) + "\"\"" | sub("^\""; "") | sub("\"$"; "")'
+EOF
+
+## search function
+#
+# $1 - search_word
+# $2 - json options
 function search {
     echo "# ===================================================== #"
     echo "# Проверьте, что выбран правильный context и namespace! #"
@@ -142,12 +166,16 @@ function search {
     if [ "$answer" == 'y' ]; then
         echo -e " (Подтверждение получено)\n"
 
+        template='eval $template_search_env_json'
+
+        if [[ "$json" == "false" ]]; then
+            template+=' | eval $template_format_search_env'
+        fi
+
         kubectl get deployments \
             --namespace="$namespace" \
             --context="$context" \
-            -o json | jq -r --arg SEARCH "$search" \
-            '.items[] | select(.spec.template.spec.containers[].env[]? | select(.name | contains($SEARCH)) and .spec.replicas != 0) | {name: .metadata.name, replicas: .spec.replicas, variable: .spec.template.spec.containers[].env[]? | select(.name | contains($SEARCH))}' \
-            | jq -r '.name + ": \"" + .variable.name + ": " + (.variable | if has("valueFrom") then .valueFrom | tostring else .value end) + "\"\"" | sub("^\""; "") | sub("\"$"; "")'
+            -o json | eval "$template"
     else
         echo -e " (Подтверждение не получено)\n"
     fi
@@ -164,5 +192,7 @@ elif [[ "$1" == 'update' ]]; then
 elif [[ "$1" == 'version' ]] || [[ "$@" == *'-v'* ]]; then
     version
 else
+    if [[ "$@" == *'--json'* ]]; then json="true"; fi
+
     search "$1"
 fi
