@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
-
-version="0.2.0"
+version="0.2.1"
 
 context="${CONTEXT:-$(kubectl config view --minify -o jsonpath='{.contexts...name}')}"
 namespace="${NAMESPACE:-$(kubectl config view --minify -o jsonpath='{.contexts..namespace}')}"
