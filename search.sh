@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-version="0.1.0"
+version="0.1.1"
 
 context="${CONTEXT:-$(kubectl config view --minify -o jsonpath='{.contexts...name}')}"
 namespace="${NAMESPACE:-$(kubectl config view --minify -o jsonpath='{.contexts..namespace}')}"
@@ -10,18 +10,24 @@ approve="${APPROVE:-false}"
 search="${1}"
 
 function check_requirement {
-    jq_available=$(command -v jq >/dev/null 2>&1 && echo true || echo false)
-    if [[ "$jq_available" == true ]]; then return 0; fi
+    kubectl_available=$(command -v kubectl >/dev/null 2>&1 && echo "доступен" || echo "не доступен")
+    curl_available=$(command -v curl >/dev/null 2>&1 && echo "доступен" || echo "не доступен")
+    jq_available=$(command -v jq >/dev/null 2>&1 && echo "доступен" || echo "не доступен")
 
-    curl_available=$(command -v curl >/dev/null 2>&1 && echo true || echo false)
-    if [[ "$curl_available" == true ]]; then return 0; fi
+    if [[ "$kubectl_available" == "доступен" ]] && \
+       [[ "$curl_available" == "доступен" ]] && \
+       [[ "$jq_available" == "доступен" ]]
+    then
+        return 0
+    fi
 
     echo "# ===================================================== #"
     echo "# Некоторые обязательные зависимости недоступны!        #"
     echo "# ===================================================== #"
     echo ""
-    echo "- jq: $jq_available"
+    echo "- kubectl: $kubectl_available"
     echo "- curl: $curl_available"
+    echo "- jq: $jq_available"
     echo ""
 
     exit 1
