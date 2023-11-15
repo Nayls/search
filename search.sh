@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-version="0.2.1"
+version="0.2.2"
 
 context="${CONTEXT:-$(kubectl config view --minify -o jsonpath='{.contexts...name}')}"
 namespace="${NAMESPACE:-$(kubectl config view --minify -o jsonpath='{.contexts..namespace}')}"
@@ -95,10 +95,10 @@ function update {
 
 function help {
     echo "Commands:"
-    echo "  ./search.sh [SEARCH ENV] [OPTIONS] # Выполнить поиск по названию переменной в деплойментах"
-    echo "  ./search.sh help                   # Отображение справки"
-    echo "  ./search.sh update                 # Обновление скрипта"
-    echo "  ./search.sh version                # Отображение версии"
+    echo "  ./search.sh [SEARCH_WORD] [OPTIONS] # Выполнить поиск по названию переменной в деплойментах"
+    echo "  ./search.sh help                    # Отображение справки"
+    echo "  ./search.sh update                  # Обновление скрипта"
+    echo "  ./search.sh version                 # Отображение версии"
     echo ""
     echo "Options:"
     echo "  [--json]  # Отобразить найденные данные в json"

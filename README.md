@@ -11,10 +11,13 @@
 
 ```bash
 Commands:
-  ./search.sh [SEARCH ENV] # Выполнить поиск по названию переменной в деплойментах
-  ./search.sh help         # Отображение справки
-  ./search.sh update       # Обновление скрипта
-  ./search.sh version      # Отображение версии
+  ./search.sh [SEARCH_WORD] [OPTIONS] # Выполнить поиск по названию переменной в деплойментах
+  ./search.sh help                    # Отображение справки
+  ./search.sh update                  # Обновление скрипта
+  ./search.sh version                 # Отображение версии
+
+Options:
+  [--json]  # Отобразить найденные данные в json
 
 System environments:
   CONTEXT    # Какой kube-context использовать (по умолчанию current-context)
@@ -29,6 +32,8 @@ Examples:
   ./search.sh version
 
   ./search.sh "KEYCLOAK_"
+
+  ./search.sh "KEYCLOAK_" --json
 
   CONTEXT=context-name ./search.sh "KEYCLOAK_"
 
